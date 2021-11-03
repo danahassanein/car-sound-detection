@@ -1,0 +1,188 @@
+<html>
+    <head>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+		<script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0/dist/Chart.min.js"></script>
+		<script src = "https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+		<link rel="stylesheet" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css"/>
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+		<style>
+			.gradient-text {
+			  /* Fallback: Set a background color. */
+			  background-color: red;
+			  
+			  /* Create the gradient. */
+			  background-image: linear-gradient(90deg, #e35dcb, #626bf5);
+			  
+			  /* Set the background size and repeat properties. */
+			  background-size: 100%;
+			  background-repeat: repeat;
+
+			  /* Use the text as a mask for the background. */
+			  /* This will show the gradient as a text color rather than element bg. */
+			  -webkit-background-clip: text;
+			  -webkit-text-fill-color: transparent; 
+			  -moz-background-clip: text;
+			  -moz-text-fill-color: transparent;
+			}
+		</style>
+	</head>
+    <body>
+		
+		<h1 class="gradient-text"><center >Real-Time Chart about the Sensed Data received </center></h1>
+		<a style="text-align:right; margin-left:10px;" href="tableData.html"><center> Click here to see the data </center></a>
+		<div id="showData"></div>
+		<div class="row" style="margin-left:315px; margin-top:35px; margin-bottom:35px;">
+		  <div class="col-md-8">
+			<canvas id="AverageTotalAmpl" width="100%"></canvas>
+		  </div>
+		</div>
+		<div class="row">
+		  <div class="col-md-6">
+			<canvas id="AverageAmplBar" width="100%"></canvas>
+		  </div>
+		  <div class="col-md-6">
+			<canvas id="MaxAmplBar" width="100%"></canvas>
+		  </div>
+		</div>
+		<script>
+			$(document).ready(function(){
+				getData();
+				setInterval(function(){
+					getData();
+				}, 5000);
+			})
+
+			var obj;
+			function getData() {
+				fetch('sensedData.txt')
+				  .then(response => response.text())
+				  .then(data => { 
+					obj = data;
+					console.log(obj);
+				});
+				var data = String(obj);
+				let xaxis = [];
+				let averageAmplitude = [];
+				let maxAmplitude = [];
+				let nbOfCars = [];
+				var count = 0;
+				data = data.split("\n");
+				str = "";
+				<!-- document.getElementById("showData").innerHTML = data; -->
+				for(var i =0; i<data.length -1 ; i++){
+					msg = String(data[i]);
+					<!-- document.getElementById("showData").innerHTML = "heyy"; -->
+					if(msg.includes(" ConnectionError ")){
+						str += "error";
+						messages = msg.split(" ConnectionError ");
+						for(message of messages){
+							xaxis.push(message.split("; ")[0].split(" ")[1]);
+							<!-- document.getElementById("showData").innerHTML = count; -->
+							averageAmplitude.push(message.split("; ")[1].split(" ")[1]);
+							maxAmplitude.push(message.split("; ")[2].split(" ")[1]);
+							nbOfCars.push(message.split("; ")[3].split(" ")[1]);
+						}
+					}
+					else{
+						str += " no error";
+						<!-- document.getElementById("showData").innerHTML = "no error"; -->
+						xaxis.push(msg.split("; ")[0].split(" ")[1]);
+						<!-- document.getElementById("showData").innerHTML = count; -->
+						m = String(msg.split(";")[1]);
+						m = m.split(" ")[2];
+						averageAmplitude.push(m);
+						m = String(msg.split(";")[2]);
+						m = m.split(" ")[2];
+						maxAmplitude.push(m);
+						m = String(msg.split(";")[3]);
+						m = m.split(" ")[2];
+						nbOfCars.push(m);
+					}
+				}
+				createAverageTotalAmplChart(xaxis,averageAmplitude, maxAmplitude, nbOfCars, 'line');
+			}  
+			
+			function createAverageTotalAmplChart(xAxis,yAxis, yAxis2, yAxis3, type){
+				try {
+					let ctx = $("#AverageTotalAmpl");
+					var mixedChart = new Chart(ctx, {
+						type: 'line',
+						data: {
+							datasets: [{
+								label: 'Average Amplitude',
+								data: [...yAxis],
+								backgroundColor: 'rgba(3, 19, 252, 0.3)',
+								borderColor: 'rgba(200, 200, 200, 0.75)',
+								hoverBackgroundColor: 'rgba(200, 200, 200, 1)',
+								hoverBorderColor: 'rgba(200, 200, 200, 1)',
+								order: 1
+							}, {
+								label: 'Maximum Amplitude',
+								data: [...yAxis2],
+								type: 'line',
+								backgroundColor: 'rgba(191, 10, 158, 0.3)',
+								borderColor: 'rgba(200, 200, 200, 0.75)',
+								hoverBackgroundColor: 'rgba(200, 200, 200, 1)',
+								hoverBorderColor: 'rgba(200, 200, 200, 1)',
+								order: 2
+							}, {
+								label: 'Number of Cars',
+								data: [...yAxis3],
+								type: 'line',
+								backgroundColor: 'rgba(156, 5, 103, 0.3)',
+								borderColor: 'rgba(200, 200, 200, 0.75)',
+								hoverBackgroundColor: 'rgba(200, 200, 200, 1)',
+								hoverBorderColor: 'rgba(200, 200, 200, 1)',
+								order: 3
+							}],
+							labels: [...xAxis]
+						}
+					});
+					
+					let dataAvg = {
+						labels: [...xAxis],
+						datasets: [{
+							label: 'Average Amplitude',
+							backgroundColor: 'rgba(3, 19, 252, 0.3)',
+							borderColor: 'rgba(200, 200, 200, 0.75)',
+							hoverBackgroundColor: 'rgba(200, 200, 200, 1)',
+							hoverBorderColor: 'rgba(200, 200, 200, 1)',
+							data: [...yAxis]
+						}]
+					};
+
+				    ctx = $("#AverageAmplBar");
+				    let barGraph2 = new Chart(ctx, {
+						type: 'bar',
+						data: dataAvg
+				    });
+					
+					let dataMax = {
+						labels: [...xAxis],
+						datasets: [{
+							label: 'Maximum Amplitude',
+							backgroundColor: 'rgba(191, 10, 158, 0.3)',
+							borderColor: 'rgba(200, 200, 200, 0.75)',
+							hoverBackgroundColor: 'rgba(200, 200, 200, 1)',
+							hoverBorderColor: 'rgba(200, 200, 200, 1)',
+							data: [...yAxis2]
+						}]
+					};
+
+				    ctx = $("#MaxAmplBar");
+				    let barGraph3 = new Chart(ctx, {
+						type: 'bar',
+						data: dataMax
+				    });
+				  
+				<!-- document.getElementById("showData").innerHTML = xAxis; -->
+			  } catch (error) {
+				console.log('Error parsing JSON data', error)
+			  }
+			}
+		</script>
+    </body>
+</html>
